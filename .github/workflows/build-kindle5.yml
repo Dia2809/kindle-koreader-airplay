@@ -41,6 +41,11 @@ jobs:
         env:
           CT_PREFIX: /tmp/koxtoolchain/build
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool python3
+
       - name: Set up environment
         run: |
           source /tmp/koxtoolchain/refs/x-compile.sh kindle5 env
@@ -48,8 +53,20 @@ jobs:
           echo "CC=$CC" >> $GITHUB_ENV
           echo "SYSROOT=$SYSROOT" >> $GITHUB_ENV
 
+      # Cache built dependencies (OpenSSL, libplist, ffmpeg)
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            /opt/openssl-arm
+            /opt/plist-arm
+            /opt/ffmpeg-arm
+          key: kindle5-deps-${{ hashFiles('**/Makefile') }}
+
       # Build ARM static OpenSSL 1.1.1 with koxtoolchain
       - name: Build OpenSSL (ARM soft-float)
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
           source /tmp/koxtoolchain/refs/x-compile.sh kindle5 env
           wget -q https://www.openssl.org/source/openssl-1.1.1w.tar.gz
@@ -66,6 +83,7 @@ jobs:
 
       # Build ARM static libplist with koxtoolchain
       - name: Build libplist (ARM soft-float)
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
           source /tmp/koxtoolchain/refs/x-compile.sh kindle5 env
           wget -q https://github.com/libimobiledevice/libplist/releases/download/2.3.0/libplist-2.3.0.tar.bz2
@@ -87,6 +105,7 @@ jobs:
 
       # Build minimal ARM static ffmpeg with koxtoolchain
       - name: Build ffmpeg (ARM soft-float)
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
           source /tmp/koxtoolchain/refs/x-compile.sh kindle5 env
           wget -q https://ffmpeg.org/releases/ffmpeg-4.4.4.tar.xz
@@ -140,26 +159,31 @@ jobs:
 
       - name: Package
         run: |
+          VERSION="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="manual-$(date +%Y%m%d-%H%M%S)"
+          fi
           cd dist-sf
-          zip -r "../airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip" airplay.koplugin/
+          zip -r "../airplay.koplugin-sf-kindle5-${VERSION}.zip" airplay.koplugin/
           cd ..
-          sha256sum "airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip" \
-            > "airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip.sha256"
+          sha256sum "airplay.koplugin-sf-kindle5-${VERSION}.zip" \
+            > "airplay.koplugin-sf-kindle5-${VERSION}.zip.sha256"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
+          name: ${{ env.VERSION }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: true
           generate_release_notes: true
           files: |
-            airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip
-            airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip.sha256
+            airplay.koplugin-sf-kindle5-${{ env.VERSION }}.zip
+            airplay.koplugin-sf-kindle5-${{ env.VERSION }}.zip.sha256
           body: |
             ## Install
 
-            1. Download `airplay.koplugin-sf-kindle5-${{ github.ref_name }}.zip`
+            1. Download `airplay.koplugin-sf-kindle5-${{ env.VERSION }}.zip`
             2. Unzip and copy `airplay.koplugin/` to your Kindle:
                ```
                cp -r airplay.koplugin /Volumes/Kindle/extensions/koreader/plugins/
