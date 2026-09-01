@@ -26,12 +26,13 @@ jobs:
           sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool libtool-bin python3 flex gperf texinfo binutils
           which libtool && libtool --version | head -1
           which libtoolize && libtoolize --version | head -1
-          # Fix broken/missing makeinfo on GitHub Actions runner
-          # The system makeinfo may be missing or crash during glibc doc build
-          sudo rm -f /usr/bin/makeinfo /usr/local/bin/makeinfo
-          sudo tee /usr/local/bin/makeinfo > /dev/null << 'EOF'
+          # Fix broken makeinfo on GitHub Actions runner
+          # The system makeinfo crashes during glibc doc build
+          # Replace with a stub that creates empty .info files
+          sudo mv /usr/bin/makeinfo /usr/bin/makeinfo.bak 2>/dev/null || true
+          sudo tee /usr/bin/makeinfo > /dev/null << 'EOF'
           #!/bin/bash
-          # Stub makeinfo: generate minimal valid .info output
+          # Stub makeinfo: create empty .info files
           for arg in "$@"; do
               case "$arg" in
                   *.info) touch "$arg" 2>/dev/null ;;
@@ -45,8 +46,8 @@ jobs:
           done
           exit 0
           EOF
-          sudo chmod +x /usr/local/bin/makeinfo
-          which makeinfo
+          sudo chmod +x /usr/bin/makeinfo
+          which makeinfo && makeinfo --version 2>&1 || true
 
       # Cache the built toolchain (takes ~30 min to build)
       - name: Cache toolchain
@@ -55,8 +56,8 @@ jobs:
         with:
           path: |
             /tmp/koxtoolchain
-            /home/runner/x-tools/arm-kindle5-linux-gnueabi
-          key: tc-kindle5-v1
+            /home/runner/x-tools
+          key: tc-kindle5-v2
 
       - name: Clone koxtoolchain
         if: steps.cache-tc.outputs.cache-hit != 'true'
