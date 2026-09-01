@@ -26,6 +26,26 @@ jobs:
           sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool libtool-bin python3 flex gperf texinfo binutils
           which libtool && libtool --version | head -1
           which libtoolize && libtoolize --version | head -1
+          # Fix broken makeinfo on GitHub Actions runner
+          # The system makeinfo crashes with a segfault during glibc doc build
+          sudo mv /usr/bin/makeinfo /usr/bin/makeinfo.real
+          sudo tee /usr/bin/makeinfo > /dev/null << 'EOF'
+          #!/bin/bash
+          # Stub makeinfo: generate minimal valid .info output
+          for arg in "$@"; do
+              case "$arg" in
+                  *.info) touch "$arg" 2>/dev/null ;;
+              esac
+          done
+          while [ $# -gt 0 ]; do
+              case "$1" in
+                  -o) touch "$2" 2>/dev/null; shift 2 ;;
+                  *) shift ;;
+              esac
+          done
+          exit 0
+          EOF
+          sudo chmod +x /usr/bin/makeinfo
 
       # Cache koxtoolchain (takes ~30 min to build)
       - name: Cache koxtoolchain
