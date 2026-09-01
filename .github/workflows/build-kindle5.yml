@@ -48,15 +48,15 @@ jobs:
           sudo chmod +x /usr/local/bin/makeinfo
           which makeinfo
 
-      # Cache koxtoolchain (takes ~30 min to build)
-      - name: Cache koxtoolchain
+      # Cache the built toolchain (takes ~30 min to build)
+      - name: Cache toolchain
         id: cache-tc
         uses: actions/cache@v4
         with:
-          path: /tmp/koxtoolchain
-          key: koxtoolchain-kindle5-${{ hashFiles('.github/workflows/build-kindle5.yml') }}
-          restore-keys: |
-            koxtoolchain-kindle5-
+          path: |
+            /tmp/koxtoolchain
+            /home/runner/x-tools/arm-kindle5-linux-gnueabi
+          key: tc-kindle5-v1
 
       - name: Clone koxtoolchain
         if: steps.cache-tc.outputs.cache-hit != 'true'
@@ -72,7 +72,7 @@ jobs:
           cd /tmp/koxtoolchain
           ./gen-tc.sh kindle5
         env:
-          CT_PREFIX: /tmp/koxtoolchain/build
+          CT_PREFIX: /home/runner/x-tools
           MAKEINFO=:
 
       - name: Set up environment
