@@ -20,6 +20,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool python3 flex gperf
+
       # Cache koxtoolchain (takes ~30 min to build)
       - name: Cache koxtoolchain
         id: cache-tc
@@ -40,11 +45,6 @@ jobs:
           ./gen-tc.sh kindle5
         env:
           CT_PREFIX: /tmp/koxtoolchain/build
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool python3
 
       - name: Set up environment
         run: |
