@@ -26,10 +26,10 @@ jobs:
           sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool libtool-bin python3 flex gperf texinfo binutils
           which libtool && libtool --version | head -1
           which libtoolize && libtoolize --version | head -1
-          # Fix broken makeinfo on GitHub Actions runner
-          # The system makeinfo crashes with a segfault during glibc doc build
-          sudo mv /usr/bin/makeinfo /usr/bin/makeinfo.real
-          sudo tee /usr/bin/makeinfo > /dev/null << 'EOF'
+          # Fix broken/missing makeinfo on GitHub Actions runner
+          # The system makeinfo may be missing or crash during glibc doc build
+          sudo rm -f /usr/bin/makeinfo /usr/local/bin/makeinfo
+          sudo tee /usr/local/bin/makeinfo > /dev/null << 'EOF'
           #!/bin/bash
           # Stub makeinfo: generate minimal valid .info output
           for arg in "$@"; do
@@ -45,7 +45,8 @@ jobs:
           done
           exit 0
           EOF
-          sudo chmod +x /usr/bin/makeinfo
+          sudo chmod +x /usr/local/bin/makeinfo
+          which makeinfo
 
       # Cache koxtoolchain (takes ~30 min to build)
       - name: Cache koxtoolchain
@@ -53,7 +54,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/koxtoolchain
-          key: koxtoolchain-kindle5-${{ hashFiles('**/x-compile.sh') }}
+          key: koxtoolchain-kindle5-${{ hashFiles('.github/workflows/build-kindle5.yml') }}
+          restore-keys: |
+            koxtoolchain-kindle5-
 
       - name: Clone koxtoolchain
         if: steps.cache-tc.outputs.cache-hit != 'true'
