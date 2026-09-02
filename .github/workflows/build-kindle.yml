@@ -37,9 +37,8 @@ jobs:
           git clone https://github.com/koreader/koxtoolchain.git /tmp/koxtoolchain
           cd /tmp/koxtoolchain
           ./gen-tc.sh kindle5
-        env:
-          CT_PREFIX: /home/runner/x-tools
-          MAKEINFO=true
+env:
+            CT_PREFIX: /home/runner/x-tools
 
       - name: Cache deps
         id: cache-deps
