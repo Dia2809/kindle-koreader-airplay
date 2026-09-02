@@ -22,7 +22,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq help2man bzip2 xz-utils pkg-config nasm yasm cmake autoconf automake libtool libtool-bin python3 flex gperf texinfo binutils
           sudo mv /usr/bin/makeinfo /usr/bin/makeinfo.real 2>/dev/null || true
-          printf '#!/bin/bash\nexit 0\n' | sudo tee /usr/bin/makeinfo > /dev/null
+          sudo rm -f /usr/bin/makeinfo
+          echo '#!/bin/bash' | sudo tee /usr/bin/makeinfo > /dev/null
+          echo 'exit 0' | sudo tee -a /usr/bin/makeinfo > /dev/null
           sudo chmod +x /usr/bin/makeinfo
 
       - name: Cache toolchain
