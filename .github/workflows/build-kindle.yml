@@ -33,12 +33,12 @@ jobs:
 
       - name: Build koxtoolchain
         if: steps.cache-tc.outputs.cache-hit != 'true'
+        env:
+          CT_PREFIX: /home/runner/x-tools
         run: |
           git clone https://github.com/koreader/koxtoolchain.git /tmp/koxtoolchain
           cd /tmp/koxtoolchain
           ./gen-tc.sh kindle5
-env:
-            CT_PREFIX: /home/runner/x-tools
 
       - name: Cache deps
         id: cache-deps
@@ -64,7 +64,7 @@ env:
           wget -q https://github.com/libimobiledevice/libplist/releases/download/2.3.0/libplist-2.3.0.tar.bz2
           tar xf libplist-2.3.0.tar.bz2
           cd libplist-2.3.0
-          ./configure --host=arm-kindle5-linux-gnueabi --prefix=/opt/plist-arm --enable-static --disable-shared --without-cython CC=arm-kindle5-linux-gnueabi-gcc CXX=arm-kindle5-linux-gnueabi-g++ CFLAGS="-march=armv7-a -mfloat-abi=softfp -mfpu=neon -fPIC"
+          ./configure --host=arm-kindle5-linux-gnueabi --prefix=/opt/plist-arm --enable-static --disable-shared --without-cython CC=arm-kindle5-linux-gnueabi-gcc CXX=arm-kindle5-linux-gnueabi-g++ [...]
           make -j$(nproc) && make install
 
       - name: Build ffmpeg
@@ -74,13 +74,13 @@ env:
           wget -q https://ffmpeg.org/releases/ffmpeg-4.4.4.tar.xz
           tar xf ffmpeg-4.4.4.tar.xz
           cd ffmpeg-4.4.4
-          ./configure --cross-prefix=arm-kindle5-linux-gnueabi- --target-os=linux --arch=arm --cpu=armv7-a --enable-cross-compile --enable-static --disable-shared --disable-everything --enable-decoder=h264 --enable-avcodec --enable-avutil --enable-swscale --disable-avformat --disable-avdevice --disable-avfilter --disable-swresample --disable-postproc --disable-doc --disable-programs --disable-network --enable-pic --extra-cflags="-march=armv7-a -mfloat-abi=softfp -mfpu=neon -fPIC" --prefix=/opt/ffmpeg-arm --quiet
+          ./configure --cross-prefix=arm-kindle5-linux-gnueabi- --target-os=linux --arch=arm --cpu=armv7-a --enable-cross-compile --enable-static --disable-shared --disable-everything --enable-dec[...]
           make -j$(nproc) && make install
 
       - name: Build plugin
         run: |
           export PATH="/home/runner/x-tools/arm-kindle5-linux-gnueabi/bin:$PATH"
-          make TARGET=sf build-kindle-sf/libairplay_mirror.so CC_KINDLE=arm-kindle5-linux-gnueabi-gcc STRIP_K=arm-kindle5-linux-gnueabi-strip FF_CFLAGS='-I/opt/ffmpeg-arm/include' FF_LDFLAGS='/opt/ffmpeg-arm/lib/libavcodec.a /opt/ffmpeg-arm/lib/libswscale.a /opt/ffmpeg-arm/lib/libavutil.a -lm' OPENSSL_CFLAGS='-I/opt/openssl-arm/include' OPENSSL_LDFLAGS='/opt/openssl-arm/lib/libssl.a /opt/openssl-arm/lib/libcrypto.a' PLIST_CFLAGS='-I/opt/plist-arm/include' PLIST_LDFLAGS='/opt/plist-arm/lib/libplist-2.0.a'
+          make TARGET=sf build-kindle-sf/libairplay_mirror.so CC_KINDLE=arm-kindle5-linux-gnueabi-gcc STRIP_K=arm-kindle5-linux-gnueabi-strip FF_CFLAGS='-I/opt/ffmpeg-arm/include' FF_LDFLAGS='/opt[...]
 
       - name: Package
         run: |
